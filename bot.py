@@ -4,6 +4,8 @@ import time
 import urllib.parse
 import urllib.request
 import threading
+import html
+import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from dotenv import load_dotenv
@@ -143,21 +145,25 @@ def start_http_server():
 
 
 # ============================================================
-# Public data search
+# Public data search (Enhanced & Cleaned)
 # ============================================================
 
-def search_public_data(query):
+def search_public_data(query: str) -> str:
+    cleaned_query = query.strip()
+
+    # Dynamic search variations built specifically around the user query
     search_queries = [
-        query + " site:mospi.gov.in maternal mortality ratio",
-        query + " site:mospi.gov.in Women and Men in India maternal mortality",
-        query + " site:mospi.gov.in Assam maternal mortality ratio",
+        f"{cleaned_query} site:mospi.gov.in",
+        f"{cleaned_query} site:gov.in official statistics",
+        cleaned_query,
     ]
 
     results = []
 
     for search_query in search_queries:
+        # Use DuckDuckGo HTML endpoint to avoid Google bot-blocking and CAPTCHAs
         url = (
-            "https://www.google.com/search?q="
+            "https://html.duckduckgo.com/html/?q="
             + urllib.parse.quote_plus(search_query)
         )
 
@@ -166,47 +172,38 @@ def search_public_data(query):
             headers={
                 "User-Agent": (
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 Chrome/131.0 Safari/537.36"
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/124.0.0.0 Safari/537.36"
                 )
             }
         )
 
         try:
-            with urllib.request.urlopen(
-                request,
-                timeout=10
-            ) as response:
-                html = response.read().decode(
-                    "utf-8",
-                    errors="ignore"
-                )
+            with urllib.request.urlopen(request, timeout=10) as response:
+                raw_html = response.read().decode("utf-8", errors="ignore")
 
-            import re
-
-            text = re.sub(
-                r"<[^>]+>",
+            # 1. Remove JavaScript and CSS block content before tag stripping
+            clean_html = re.sub(
+                r"<(script|style)[^>]*>.*?</\1>",
                 " ",
-                html
+                raw_html,
+                flags=re.DOTALL | re.IGNORECASE
             )
 
-            text = text.replace("&quot;", '"')
-            text = text.replace("&#39;", "'")
-            text = text.replace("&amp;", "&")
-            text = text.replace("&nbsp;", " ")
+            # 2. Decode all HTML entities properly (&nbsp;, &quot;, &#39;, &amp;)
+            text_content = html.unescape(clean_html)
 
-            text = re.sub(
-                r"\s+",
-                " ",
-                text
-            ).strip()
+            # 3. Strip remaining HTML tags
+            text = re.sub(r"<[^>]+>", " ", text_content)
+
+            # 4. Collapse multiple spaces and line breaks into single spaces
+            text = re.sub(r"\s+", " ", text).strip()
 
             if text:
                 results.append(text[:10000])
 
         except Exception as e:
-            print(
-                f"Public search error: {e}"
-            )
+            print(f"Public search error for query '{search_query}': {e}")
 
     return "\n\n--- SEARCH RESULT ---\n\n".join(results)[:30000]
 

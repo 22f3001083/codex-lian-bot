@@ -342,7 +342,7 @@ async def handle_message(
 
     response = client.chat.completions.create(
 
-        model="openai/gpt-4.1-nano",
+        model="gpt-5-mini",
         messages=messages,
 
         response_format={

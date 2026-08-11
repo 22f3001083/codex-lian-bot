@@ -280,12 +280,11 @@ async def handle_message(
 
     # If the model accidentally included an outer "answer",
     # remove it so Python can construct the official wrapper.
-    if (
-        isinstance(answer, dict)
-        and "answer" in answer
-        and len(answer) == 1
-    ):
-        answer = answer["answer"]
+    while isinstance(answer, dict) and "answer" in answer:
+    answer = answer["answer"]
+
+    if isinstance(answer, dict):
+        answer.pop("log_url", None)
 
     # ========================================================
     # Construct EXACT grader-required response

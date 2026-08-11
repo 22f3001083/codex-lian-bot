@@ -281,7 +281,7 @@ async def handle_message(
     # If the model accidentally included an outer "answer",
     # remove it so Python can construct the official wrapper.
     while isinstance(answer, dict) and "answer" in answer:
-    answer = answer["answer"]
+        answer = answer["answer"]
 
     if isinstance(answer, dict):
         answer.pop("log_url", None)

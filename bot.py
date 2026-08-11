@@ -284,9 +284,7 @@ async def handle_message(
     # Ask AI Pipe / GPT
     # ========================================================
 
-    public_data = search_public_data(
-        user_text + " MOSPI Government of India official statistics"
-    )
+    public_data = search_public_data(user_text)
 
     messages = [
         {
